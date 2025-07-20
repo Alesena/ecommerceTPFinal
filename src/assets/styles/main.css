@@ -1,42 +1,42 @@
-
-body {
-  font-family: 'Arial', sans-serif;
+* {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   line-height: 1.6;
+  background-color: #f5f7fa;
   color: #333;
 }
 
-#root {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+a {
+  text-decoration: none;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+input, textarea, select {
+  font-family: inherit;
 }
 
 .container {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 1rem;
 }
 
-
-.loading-message {
-  text-align: center;
-  padding: 2rem;
-  font-size: 1.2rem;
+/* Animaciones */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-.error-message {
-  color: #dc3545;
-  text-align: center;
-  padding: 2rem;
-  font-size: 1.2rem;
-}
-
-.not-found {
-  text-align: center;
-  padding: 2rem;
-  font-size: 1.2rem;
+.fade-in {
+  animation: fadeIn 0.5s ease-in;
 }

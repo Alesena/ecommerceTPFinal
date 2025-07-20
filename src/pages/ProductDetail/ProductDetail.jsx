@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../firebase';
 import './ProductDetail.css';
 
 const ProductDetail = () => {
@@ -11,12 +13,14 @@ const ProductDetail = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const response = await fetch(`https://fakestoreapi.com/products/${id}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch product');
+        const docRef = doc(db, 'products', id);
+        const docSnap = await getDoc(docRef);
+
+        if (!docSnap.exists()) {
+          throw new Error('Producto no encontrado');
         }
-        const data = await response.json();
-        setProduct(data);
+
+        setProduct({ id: docSnap.id, ...docSnap.data() });
       } catch (err) {
         setError(err.message);
       } finally {
@@ -27,7 +31,7 @@ const ProductDetail = () => {
     fetchProduct();
   }, [id]);
 
-  if (loading) return <div className="loading-message">Cargando el detalle de los productos...</div>;
+  if (loading) return <div className="loading-message">Cargando detalles del producto...</div>;
   if (error) return <div className="error-message">Error: {error}</div>;
   if (!product) return <div className="not-found">Producto no encontrado</div>;
 
@@ -35,20 +39,42 @@ const ProductDetail = () => {
     <div className="product-detail-page">
       <div className="product-detail-container">
         <div className="product-image-wrapper">
-          <img 
-            src={product.image} 
-            alt={product.title} 
+          <img
+            src={product.imageUrl || product.image}
+            alt={product.name}
             className="product-detail-image"
+            onError={(e) => {
+              e.target.src = 'https://via.placeholder.com/500x500?text=Imagen+no+disponible';
+            }}
           />
         </div>
         <div className="product-info">
-          <h1 className="product-title">{product.title}</h1>
-          <p className="product-category">{product.category}</p>
-          <div className="product-rating">
-            Calificacion: {product.rating.rate} ({product.rating.count} comentarios:)
-          </div>
+          <h1 className="product-title">{product.name}</h1>
+          
+          {product.sku && (
+            <p className="product-sku">
+              SKU: <strong>{product.sku}</strong>
+            </p>
+          )}
+
+          {product.category && (
+            <p className="product-category">
+              Categoría: {product.category}
+            </p>
+          )}
+
+          {product.rating && (
+            <div className="product-rating">
+              Calificación: {product.rating.rate} ({product.rating.count} comentarios)
+            </div>
+          )}
+
           <p className="product-description">{product.description}</p>
-          <p className="product-price">${product.price.toFixed(2)}</p>
+
+          <p className="product-price">
+            ${product.price?.toFixed(2) || '0.00'}
+          </p>
+
           <button className="buy-button">Agregar al carrito</button>
         </div>
       </div>
