@@ -2,7 +2,15 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { auth, db } from '../../firebase';
-import { FaUserCircle, FaChevronDown, FaSignOutAlt, FaShoppingCart, FaSearch } from 'react-icons/fa';
+import { 
+  FaUserCircle, 
+  FaChevronDown, 
+  FaSignOutAlt, 
+  FaShoppingCart, 
+  FaSearch,
+  FaBars,
+  FaTimes 
+} from 'react-icons/fa';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import './Header.css';
 
@@ -13,17 +21,22 @@ const Navbar = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [showResults, setShowResults] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const dropdownRef = useRef(null);
   const searchRef = useRef(null);
+  const mobileMenuRef = useRef(null);
 
 
- useEffect(() => {
+  useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setDropdownOpen(false);
       }
       if (searchRef.current && !searchRef.current.contains(event.target)) {
         setShowResults(false);
+      }
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
+        setMobileMenuOpen(false);
       }
     };
 
@@ -32,6 +45,11 @@ const Navbar = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
 
   const handleSearch = async (searchText) => {
     if (!searchText.trim()) {
@@ -109,9 +127,20 @@ const Navbar = () => {
         <Link to="/" className="logo">Mi Ecommerce</Link>
       </div>
 
+       <button 
+        className="mobile-menu-button"
+        onClick={toggleMobileMenu}
+        aria-label="Menú móvil"
+      >
+        {mobileMenuOpen ? <FaTimes /> : <FaBars />}
+      </button>
 
 
-       <div className="nav-links">
+
+        <div 
+        className={`nav-links ${mobileMenuOpen ? 'mobile-menu-open' : ''}`}
+        ref={mobileMenuRef}
+      >
         <div className="search-container" ref={searchRef}>
           <form onSubmit={handleSearchSubmit} className="search-form">
             <input
@@ -166,25 +195,31 @@ const Navbar = () => {
           )}
         </div>
 
-        {currentUser ? (
-          <>
-            <Link to="/cart" className="nav-link cart-link">
-              <FaShoppingCart /> Carrito
-            </Link>
-
-            <div className="user-menu-container" ref={dropdownRef}>
-              <button 
-                className="user-menu-button"
-                onClick={toggleDropdown}
-                aria-expanded={dropdownOpen}
-                aria-label="Menú de usuario"
+         <div className="mobile-menu-content">
+          {currentUser ? (
+            <>
+              <Link 
+                to="/cart" 
+                className="nav-link cart-link"
+                onClick={() => setMobileMenuOpen(false)}
               >
-                <FaUserCircle className="user-icon" />
-                <span className="user-name">
-                  {currentUser.displayName || currentUser.email.split('@')[0]}
-                </span>
-                <FaChevronDown className={`dropdown-arrow ${dropdownOpen ? 'open' : ''}`} />
-              </button>
+                <FaShoppingCart /> Carrito
+              </Link>
+
+            
+              <div className="user-menu-container" ref={dropdownRef}>
+                <button 
+                  className="user-menu-button"
+                  onClick={toggleDropdown}
+                  aria-expanded={dropdownOpen}
+                  aria-label="Menú de usuario"
+                >
+                  <FaUserCircle className="user-icon" />
+                  <span className="user-name">
+                    {currentUser.displayName || currentUser.email.split('@')[0]}
+                  </span>
+                  <FaChevronDown className={`dropdown-arrow ${dropdownOpen ? 'open' : ''}`} />
+                </button>
 
               {dropdownOpen && (
                 <div className="user-dropdown">
@@ -223,16 +258,33 @@ const Navbar = () => {
                 </div>
               )}
             </div>
-          </>
-        ) : (
-          <>
-            <Link to="/login" className="nav-link">Iniciar sesión</Link>
-            <Link to="/register" className="nav-link register-link">Registrarse</Link>
-            <Link to="/cart" className="nav-link cart-link">
-              <FaShoppingCart /> Carrito
-            </Link>
-          </>
-        )}
+            </>
+          ) : (
+            <>
+              <Link 
+                to="/login" 
+                className="nav-link"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Iniciar sesión
+              </Link>
+              <Link 
+                to="/register" 
+                className="nav-link register-link"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Registrarse
+              </Link>
+              <Link 
+                to="/cart" 
+                className="nav-link cart-link"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <FaShoppingCart /> Carrito
+              </Link>
+            </>
+          )}
+        </div>
       </div>
     </nav>
   );

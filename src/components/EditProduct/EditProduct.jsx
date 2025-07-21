@@ -3,13 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useCategoriesContext } from '../../context/CategoriesContext';
+import { useAuth } from '../../context/AuthContext';
 import './EditProduct.css';
 
 const EditProduct = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { currentUser, isAdmin, loading: authLoading } = useAuth();
   const { categories, loading: loadingCategories, error: categoriesError } = useCategoriesContext();
-
 
   const [product, setProduct] = useState({
     sku: '',
@@ -17,15 +18,22 @@ const EditProduct = () => {
     price: '',
     description: '',
     imageUrl: '',
-    category: ''
+    categoryId: '',
+    subcategoryId: ''
   });
-  
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [updateSuccess, setUpdateSuccess] = useState(false);
 
+  // Verificar permisos de admin
+  useEffect(() => {
+    if (!authLoading && !isAdmin) {
+      navigate('/unauthorized');
+    }
+  }, [authLoading, isAdmin, navigate]);
 
+  // Obtener producto
   useEffect(() => {
     const fetchProduct = async () => {
       try {
@@ -33,13 +41,15 @@ const EditProduct = () => {
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
+          const productData = docSnap.data();
           setProduct({
-            sku: docSnap.data().sku || '',
-            name: docSnap.data().name || '',
-            price: docSnap.data().price || 0,
-            description: docSnap.data().description || '',
-            imageUrl: docSnap.data().imageUrl || '',
-            category: docSnap.data().category || ''
+            sku: productData.sku || '',
+            name: productData.name || '',
+            price: productData.price || 0,
+            description: productData.description || '',
+            imageUrl: productData.imageUrl || '',
+            categoryId: productData.categoryId || '',
+            subcategoryId: productData.subcategoryId || ''
           });
         } else {
           setError('Producto no encontrado');
@@ -51,48 +61,29 @@ const EditProduct = () => {
       }
     };
 
-    fetchProduct();
-  }, [id]);
+    if (isAdmin) {
+      fetchProduct();
+    }
+  }, [id, isAdmin]);
 
-  if (loadingCategories) {
-    return <div className="loading">Cargando categorías...</div>;
-  }
-
-  if (categoriesError) {
-    return <div className="error">Error: {categoriesError}</div>;
-  }
-
-  if (!loadingCategories && categories.length === 0) {
-    return (
-      <div className="no-categories-message">
-        <h2>No hay categorías disponibles</h2>
-        <p>Para editar productos, primero debe crear categorías.</p>
-        <button 
-          onClick={() => navigate('/admin/categories')}
-          className="primary-button"
-        >
-          Crear Categorías
-        </button>
-      </div>
-    );
-  }
-
-
+  // Manejar cambios en el formulario
   const handleChange = (e) => {
     const { name, value } = e.target;
     setProduct(prev => ({
       ...prev,
-      [name]: name === 'price' ? Number(value) : value
+      [name]: name === 'price' ? Number(value) : value,
+      ...(name === 'categoryId' && { subcategoryId: '' }) // Reset subcategoría al cambiar categoría
     }));
   };
 
+  // Manejar envío del formulario
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setUpdateSuccess(false);
 
-    // Validación básica
-    if (!product.name || !product.price || !product.category) {
+    // Validación
+    if (!product.name || !product.price || !product.categoryId) {
       setError('Por favor complete todos los campos requeridos');
       return;
     }
@@ -101,10 +92,11 @@ const EditProduct = () => {
       setLoading(true);
       await updateDoc(doc(db, 'products', id), {
         ...product,
-        lastUpdated: new Date()
+        updatedAt: new Date().toISOString(),
+        updatedBy: currentUser.uid
       });
       setUpdateSuccess(true);
-      setTimeout(() => navigate('/admin'), 1500);
+      setTimeout(() => navigate('/'), 1500);
     } catch (error) {
       setError(`Error al actualizar: ${error.message}`);
     } finally {
@@ -112,8 +104,17 @@ const EditProduct = () => {
     }
   };
 
+  // Obtener categorías principales
+  const parentCategories = categories.filter(c => !c.parentId);
 
-  if (loadingCategories) return <div className="loading">Cargando categorías...</div>;
+  // Obtener subcategorías de la categoría seleccionada
+  const subcategories = product.categoryId 
+    ? categories.filter(c => c.parentId === product.categoryId)
+    : [];
+
+  // Estados de carga
+  if (authLoading || loadingCategories) return <div className="loading">Cargando...</div>;
+  if (!isAdmin) return null;
   if (categoriesError) return <div className="error">Error: {categoriesError}</div>;
   if (loading) return <div className="loading">Cargando producto...</div>;
   if (error) return <div className="error-message">{error}</div>;
@@ -129,7 +130,6 @@ const EditProduct = () => {
       )}
 
       <form onSubmit={handleSubmit} className="edit-product-form">
- 
         <div className="form-group">
           <label>SKU</label>
           <input
@@ -141,25 +141,42 @@ const EditProduct = () => {
           />
         </div>
 
-
         <div className="form-group">
-          <label>Categoría*</label>
+          <label>Categoría Principal*</label>
           <select
-            name="category"
-            value={product.category}
+            name="categoryId"
+            value={product.categoryId}
             onChange={handleChange}
             required
-            disabled={loadingCategories}
+            disabled={loading}
           >
             <option value="">Seleccionar categoría</option>
-            {categories.map(cat => (
-              <option key={cat.id} value={cat.name}>
-                {cat.name}
+            {parentCategories.map(category => (
+              <option key={category.id} value={category.id}>
+                {category.name}
               </option>
             ))}
           </select>
         </div>
 
+        {product.categoryId && (
+          <div className="form-group">
+            <label>Subcategoría</label>
+            <select
+              name="subcategoryId"
+              value={product.subcategoryId}
+              onChange={handleChange}
+              disabled={loading || subcategories.length === 0}
+            >
+              <option value="">Ninguna</option>
+              {subcategories.map(subcategory => (
+                <option key={subcategory.id} value={subcategory.id}>
+                  {subcategory.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className="form-group">
           <label>Nombre*</label>
@@ -172,7 +189,6 @@ const EditProduct = () => {
             disabled={loading}
           />
         </div>
-
 
         <div className="form-group">
           <label>Precio*</label>
@@ -188,7 +204,6 @@ const EditProduct = () => {
           />
         </div>
 
-
         <div className="form-group">
           <label>Descripción*</label>
           <textarea
@@ -199,7 +214,6 @@ const EditProduct = () => {
             disabled={loading}
           />
         </div>
-
 
         <div className="image-preview-container">
           {product.imageUrl && (
@@ -212,16 +226,12 @@ const EditProduct = () => {
               }}
             />
           )}
-          <small className="image-note">
-            Nota: Para cambiar la imagen, crea un nuevo producto.
-          </small>
         </div>
-
 
         <div className="button-group">
           <button
             type="button"
-            onClick={() => navigate('/admin')}
+            onClick={() => navigate('/')}
             className="cancel-button"
             disabled={loading}
           >
@@ -230,7 +240,7 @@ const EditProduct = () => {
           <button
             type="submit"
             className="submit-button"
-            disabled={loading || loadingCategories}
+            disabled={loading}
           >
             {loading ? 'Guardando...' : 'Guardar Cambios'}
           </button>

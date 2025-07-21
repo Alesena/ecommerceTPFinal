@@ -1,53 +1,30 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, addDoc, serverTimestamp, getDocs, query, where, orderBy } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
+import { useCategoriesContext } from '../../context/CategoriesContext';
 import './CreateCategory.css';
 
 const CreateCategory = () => {
   const { currentUser, isAdmin, loading: authLoading } = useAuth();
+  const {
+    categories,
+    loading: categoriesLoading,
+    createCategory
+  } = useCategoriesContext();
   const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     parentId: null,
     isSubcategory: false
   });
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(false);
+
+  const [submitLoading, setSubmitLoading] = useState(false); // Renombrado a submitLoading
   const [error, setError] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [newCategoryId, setNewCategoryId] = useState(null);
-  const [loadingCategories, setLoadingCategories] = useState(false);
-
-
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        setLoadingCategories(true);
-        const q = query(
-          collection(db, 'categories'),
-          where('parentId', '==', null), 
-          orderBy('name', 'asc')
-        );
-        const querySnapshot = await getDocs(q);
-        const categoriesData = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        setCategories(categoriesData);
-      } catch (err) {
-        console.error("Error fetching categories:", err);
-        setError('Error al cargar categorías');
-      } finally {
-        setLoadingCategories(false);
-      }
-    };
-
-    fetchCategories();
-  }, []);
-
 
   useEffect(() => {
     if (!authLoading && (!currentUser || !isAdmin)) {
@@ -59,6 +36,7 @@ const CreateCategory = () => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
+
 
   const handleToggleSubcategory = (e) => {
     setFormData(prev => ({
@@ -83,9 +61,8 @@ const CreateCategory = () => {
     }
 
     try {
-      setLoading(true);
 
-
+      setSubmitLoading(true); // Usamos submitLoading aquí
       const slug = formData.name.toLowerCase()
         .replace(/[^\w\s]/gi, '')
         .replace(/\s+/g, '-');
@@ -102,9 +79,9 @@ const CreateCategory = () => {
         order: 0
       };
 
-      const docRef = await addDoc(collection(db, 'categories'), categoryData);
+      const categoryId = await createCategory(categoryData);
 
-      setNewCategoryId(docRef.id);
+      setNewCategoryId(categoryId);
       setShowSuccessModal(true);
       setFormData({
         name: '',
@@ -115,7 +92,7 @@ const CreateCategory = () => {
     } catch (err) {
       setError(`Error al crear categoría: ${err.message}`);
     } finally {
-      setLoading(false);
+      setSubmitLoading(false); // Usamos submitLoading aquí
     }
   };
 
@@ -140,7 +117,7 @@ const CreateCategory = () => {
               name="isSubcategory"
               checked={formData.isSubcategory}
               onChange={handleToggleSubcategory}
-              disabled={loading}
+              disabled={submitLoading || categoriesLoading} // Actualizado aquí
               className="checkbox-input"
             />
             <span className="checkbox-custom"></span>
@@ -151,9 +128,9 @@ const CreateCategory = () => {
         {formData.isSubcategory && (
           <div className="form-group">
             <label>Categoría Padre*</label>
-            {loadingCategories ? (
+            {categoriesLoading ? (
               <div className="loading">Cargando categorías...</div>
-            ) : categories.length === 0 ? (
+            ) : categories.filter(c => !c.parentId).length === 0 ? (
               <p className="no-categories">No hay categorías principales disponibles</p>
             ) : (
               <select
@@ -161,15 +138,17 @@ const CreateCategory = () => {
                 value={formData.parentId || ''}
                 onChange={handleChange}
                 required
-                disabled={loading}
+                disabled={submitLoading || categoriesLoading} // Actualizado aquí
                 className="select-input"
               >
                 <option value="">Selecciona una categoría</option>
-                {categories.map(category => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
+                {categories
+                  .filter(c => !c.parentId)
+                  .map(category => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
               </select>
             )}
           </div>
@@ -183,7 +162,7 @@ const CreateCategory = () => {
             value={formData.name}
             onChange={handleChange}
             required
-            disabled={loading}
+            disabled={submitLoading} // Actualizado aquí
             placeholder="Ej: Vestidos, Jeans, Zapatos"
             className="text-input"
           />
@@ -196,7 +175,7 @@ const CreateCategory = () => {
             value={formData.description}
             onChange={handleChange}
             rows="3"
-            disabled={loading}
+            disabled={submitLoading} // Actualizado aquí
             placeholder="Descripción de la categoría (opcional)"
             className="textarea-input"
           />
@@ -207,16 +186,16 @@ const CreateCategory = () => {
             type="button"
             onClick={() => navigate('/admin')}
             className="cancel-button"
-            disabled={loading}
+            disabled={submitLoading} // Actualizado aquí
           >
             Cancelar
           </button>
           <button
             type="submit"
             className="submit-button"
-            disabled={loading}
+            disabled={submitLoading || categoriesLoading} // Actualizado aquí
           >
-            {loading ? 'Creando...' : 'Crear Categoría'}
+            {submitLoading ? 'Creando...' : 'Crear Categoría'}
           </button>
         </div>
       </form>

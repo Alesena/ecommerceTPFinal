@@ -1,13 +1,15 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { 
   collection, 
-  getDocs, 
   addDoc, 
   doc, 
   updateDoc, 
   deleteDoc,
   query,
-  orderBy 
+  orderBy,
+  where,
+  onSnapshot,
+  serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../firebase';
 
@@ -18,42 +20,61 @@ export const CategoriesProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const refreshCategories = async () => {
-    try {
-      setLoading(true);
-      const q = query(collection(db, 'categories'), orderBy('name'));
-      const querySnapshot = await getDocs(q);
-      
-      const categoriesData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-
-      setCategories(categoriesData);
-      setError(null);
-    } catch (err) {
-      setError(err.message);
-      setCategories([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    refreshCategories();
+    setLoading(true);
+    const q = query(
+      collection(db, 'categories'),
+      where('isActive', '==', true),
+      orderBy('name')
+    );
+    
+    const unsubscribe = onSnapshot(q, 
+      (querySnapshot) => {
+        const categoriesData = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setCategories(categoriesData);
+        setError(null);
+        setLoading(false);
+      },
+      (err) => {
+        setError(err.message);
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
   }, []);
 
   const createCategory = async (categoryData) => {
+    let tempId = `temp-${Date.now()}`; // Definimos tempId aquí para que esté disponible en el catch
+    
     try {
       setLoading(true);
+      // Actualización optimista
+      setCategories(prev => [...prev, {
+        id: tempId,
+        ...categoryData,
+        isActive: true,
+        createdAt: new Date().toISOString()
+      }]);
+      
       const docRef = await addDoc(collection(db, 'categories'), {
         ...categoryData,
-        createdAt: new Date().toISOString(),
+        createdAt: serverTimestamp(),
         isActive: true
       });
-      await refreshCategories();
+      
+      // Reemplazar el temporal con el real
+      setCategories(prev => prev.map(cat => 
+        cat.id === tempId ? { ...cat, id: docRef.id } : cat
+      ));
+      
       return docRef.id;
     } catch (err) {
+      // Revertir en caso de error
+      setCategories(prev => prev.filter(cat => cat.id !== tempId));
       setError(err.message);
       throw err;
     } finally {
@@ -66,9 +87,8 @@ export const CategoriesProvider = ({ children }) => {
       setLoading(true);
       await updateDoc(doc(db, 'categories', id), {
         ...updatedData,
-        updatedAt: new Date().toISOString()
+        updatedAt: serverTimestamp()
       });
-      await refreshCategories();
     } catch (err) {
       setError(err.message);
       throw err;
@@ -77,15 +97,13 @@ export const CategoriesProvider = ({ children }) => {
     }
   };
 
-  // Soft delete (marcar como inactiva)
   const deactivateCategory = async (id) => {
     try {
       setLoading(true);
       await updateDoc(doc(db, 'categories', id), {
         isActive: false,
-        deletedAt: new Date().toISOString()
+        deletedAt: serverTimestamp()
       });
-      await refreshCategories();
     } catch (err) {
       setError(err.message);
       throw err;
@@ -94,12 +112,10 @@ export const CategoriesProvider = ({ children }) => {
     }
   };
 
-  // Eliminación permanente
   const deleteCategoryPermanently = async (id) => {
     try {
       setLoading(true);
       await deleteDoc(doc(db, 'categories', id));
-      await refreshCategories();
     } catch (err) {
       setError(err.message);
       throw err;
@@ -112,23 +128,18 @@ export const CategoriesProvider = ({ children }) => {
     return categories.find(cat => cat.id === id) || null;
   };
 
-  const activeCategories = categories.filter(cat => cat.isActive !== false);
-
-  const value = {
-    categories,
-    activeCategories,
-    loading,
-    error,
-    refreshCategories,
-    createCategory,
-    updateCategory,
-    deactivateCategory, // Renombrado para mayor claridad
-    deleteCategoryPermanently, // Nueva función
-    getCategoryById
-  };
-
   return (
-    <CategoriesContext.Provider value={value}>
+    <CategoriesContext.Provider value={{
+      categories,
+      activeCategories: categories.filter(cat => cat.isActive !== false),
+      loading,
+      error,
+      createCategory,
+      updateCategory,
+      deactivateCategory,
+      deleteCategoryPermanently,
+      getCategoryById
+    }}>
       {children}
     </CategoriesContext.Provider>
   );

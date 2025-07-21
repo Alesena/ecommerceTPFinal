@@ -15,7 +15,7 @@ const AdminPanel = () => {
     imageUrl: '',
     category: '',
     subcategory: '',
-    keywords: [] // Nuevo campo para keywords
+    keywords: []
   });
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
@@ -37,7 +37,6 @@ const AdminPanel = () => {
   const categorySelectRef = useRef(null);
   const subcategorySelectRef = useRef(null);
 
-  // Cerrar dropdown al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (categorySelectRef.current && !categorySelectRef.current.contains(event.target)) {
@@ -60,7 +59,7 @@ const AdminPanel = () => {
       if (category) {
         const subs = categories.filter(c => c.parentId === category.id);
         setSubcategories(subs);
-        setProduct(prev => ({ ...prev, subcategory: '' })); // Resetear subcategoría al cambiar categoría
+        setProduct(prev => ({ ...prev, subcategory: '' }));
       }
     } else {
       setSubcategories([]);
@@ -70,21 +69,15 @@ const AdminPanel = () => {
 
   const generateKeywords = (name) => {
     const nameKeywords = name.toLowerCase().split(' ');
-    const commonSuffixes = ['', 's', 'es']; // Para plurales
-
+    const commonSuffixes = ['', 's', 'es'];
     const generatedKeywords = new Set();
-
-    // Generar variaciones de cada palabra
     nameKeywords.forEach(word => {
       commonSuffixes.forEach(suffix => {
         generatedKeywords.add(word + suffix);
       });
     });
-
-    // Añadir el nombre completo y versiones sin espacios
     generatedKeywords.add(name.toLowerCase());
     generatedKeywords.add(name.toLowerCase().replace(/\s+/g, ''));
-
     return Array.from(generatedKeywords);
   };
 
@@ -106,23 +99,19 @@ const AdminPanel = () => {
     let attempts = 0;
     const maxAttempts = 10;
     let sku;
-
     do {
       sku = `${prefix}-${Math.floor(1000 + Math.random() * 9000)}`;
       attempts++;
-
       if (attempts >= maxAttempts) {
         throw new Error('No se pudo generar un SKU único. Intente nuevamente.');
       }
     } while (!(await isSkuUnique(sku)));
-
     return sku;
   };
 
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     try {
       setUploading(true);
       const formData = new FormData();
@@ -156,11 +145,11 @@ const AdminPanel = () => {
       setMessage({ text: 'Selecciona una categoría primero', type: 'error' });
       return;
     }
-
     try {
       setUploading(true);
       const newSku = await generateUniqueSku();
       setProduct(prev => ({ ...prev, sku: newSku }));
+      setMessage({ text: 'SKU generado correctamente', type: 'success' });
     } catch (error) {
       setMessage({ text: error.message, type: 'error' });
     } finally {
@@ -177,7 +166,6 @@ const AdminPanel = () => {
         type: 'success'
       });
 
-      // Resetear si la categoría/subcategoría eliminada estaba seleccionada
       const category = categories.find(c => c.id === categoryId);
       if (category) {
         if (product.category === category.name) {
@@ -225,7 +213,6 @@ const AdminPanel = () => {
         ? categories.find(c => c.name === product.subcategory)
         : null;
 
-      // Generar keywords automáticamente
       const keywords = generateKeywords(product.name);
 
       await addDoc(collection(db, 'products'), {
@@ -236,11 +223,10 @@ const AdminPanel = () => {
         imageUrl: product.imageUrl,
         categoryId: category?.id || '',
         subcategoryId: subcategory?.id || '',
-        keywords: keywords, // Añadir las keywords
+        keywords: keywords,
         createdAt: serverTimestamp()
       });
 
-      // Resetear formulario
       setProduct({
         sku: '',
         name: '',
@@ -295,7 +281,6 @@ const AdminPanel = () => {
               >
                 {uploading ? 'Eliminando...' : 'Eliminar'}
               </button>
-
             </div>
           </div>
         </div>
@@ -314,7 +299,6 @@ const AdminPanel = () => {
               <FaPlus /> Administrar Categorías
             </button>
           </div>
-
           <div className="custom-select" ref={categorySelectRef}>
             <div
               className={`select-header ${!product.category ? 'placeholder' : ''}`}
@@ -323,27 +307,20 @@ const AdminPanel = () => {
               {product.category || 'Seleccionar categoría'}
               <span className="arrow">{showCategoryDropdown ? '▲' : '▼'}</span>
             </div>
-
             {showCategoryDropdown && (
               <div className="select-options">
                 {categories
-                  .filter(cat => !cat.parentId) // Solo categorías principales
+                  .filter(cat => !cat.parentId)
                   .map((cat) => (
                     <div
                       key={cat.id}
                       className="option-item"
-                      onClick={async () => {
+                      onClick={() => {
                         setProduct(prev => ({
                           ...prev,
                           category: cat.name,
-                          subcategory: '' // Resetear subcategoría
+                          subcategory: ''
                         }));
-                        try {
-                          const newSku = await generateUniqueSku();
-                          setProduct(prev => ({ ...prev, sku: newSku }));
-                        } catch (error) {
-                          setMessage({ text: error.message, type: 'error' });
-                        }
                         setShowCategoryDropdown(false);
                       }}
                     >
@@ -378,7 +355,6 @@ const AdminPanel = () => {
                 {product.subcategory || 'Seleccionar subcategoría'}
                 <span className="arrow">{showSubcategoryDropdown ? '▲' : '▼'}</span>
               </div>
-
               {showSubcategoryDropdown && (
                 <div className="select-options">
                   <div

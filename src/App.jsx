@@ -12,6 +12,7 @@ import CreateCategory from './components/CreateCategory/CreateCategory';
 import { CategoriesProvider } from './context/CategoriesContext';
 import UserProfile from './components/UserProfile/UserProfile';
 import UserDashboard from './components/UserDashboard/UserDashboard';
+import Footer from './components/Footer/Footer';
 
 function App() {
   return (
@@ -29,8 +30,6 @@ function App() {
             <Route path="/admin/categories" element={<CreateCategory />} />
             <Route path="/perfil" element={<UserProfile />} />
             <Route path="/mi-cuenta" element={<UserDashboard />} />
-            
-
 
             <Route path="/admin" element={
               <PrivateRoute>
@@ -49,6 +48,7 @@ function App() {
             } />
           </Routes>
         </main>
+        <Footer />
       </div>
     </CategoriesProvider>
   );

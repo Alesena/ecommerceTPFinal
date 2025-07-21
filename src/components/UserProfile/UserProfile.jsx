@@ -50,12 +50,12 @@ const UserProfile = () => {
     try {
       const user = auth.currentUser;
       if (user) {
-        // Actualizar en Authentication
+
         await updateProfile(user, {
           displayName: `${userData.nombre} ${userData.apellido}`
         });
 
-        // Actualizar en Firestore
+
         const userRef = doc(db, 'users', user.uid);
         await updateDoc(userRef, {
           nombre: userData.nombre,

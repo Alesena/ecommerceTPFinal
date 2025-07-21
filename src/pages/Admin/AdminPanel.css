@@ -227,7 +227,6 @@
   cursor: not-allowed;
 }
 
-/* Messages */
 .admin-container .message {
   padding: 0.8rem;
   margin-bottom: 1rem;
@@ -248,7 +247,7 @@
   border: 1px solid #ffcdd2;
 }
 
-/* Category Header */
+
 .category-header {
   display: flex;
   justify-content: space-between;
@@ -275,7 +274,7 @@
   background-color: #27ae60;
 }
 
-/* Delete Modal */
+
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -339,7 +338,6 @@
   background: #c0392b;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
   .admin-container {
     padding: 1.5rem;
@@ -373,7 +371,7 @@
   }
 }
 
-/* Loading and Error States */
+
 .loading {
   text-align: center;
   padding: 2rem;
@@ -389,19 +387,19 @@
   margin: 1rem 0;
   text-align: center;
 }
-/* Estilos para el selector de subcategorías */
+
 .custom-select .select-options {
   max-height: 300px;
   overflow-y: auto;
 }
 
-/* Estilo para la opción "Ninguna" */
+
 .option-item.none-option {
   color: #7f8c8d;
   font-style: italic;
 }
 
-/* Ajustes para los dropdowns anidados */
+
 .form-group + .form-group {
   margin-top: -0.5rem;
 }

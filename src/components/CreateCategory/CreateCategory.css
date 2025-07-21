@@ -152,20 +152,8 @@
   margin-top: 1.5rem;
 }
 
-.edit-button {
-  padding: 0.7rem 1.2rem;
-  background-color: #f39c12;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.95rem;
-  transition: background-color 0.3s;
-}
 
-.edit-button:hover {
-  background-color: #e67e22;
-}
+
 
 .confirm-button {
   padding: 0.7rem 1.2rem;
@@ -211,7 +199,6 @@
   
   .submit-button,
   .cancel-button,
-  .edit-button,
   .confirm-button {
     width: 100%;
   }
