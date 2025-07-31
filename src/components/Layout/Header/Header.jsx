@@ -1,11 +1,12 @@
-import TopBar from './TopBar';
 import Navbar from './Navbar';
 import './Header.css';
 
 const Header = () => {
   return (
     <header className="header">
-      <TopBar />
+      <div className="top-bar">
+        <p>Envíos gratis en compras superiores a $50.000</p>
+      </div>
       <Navbar />
     </header>
   );
