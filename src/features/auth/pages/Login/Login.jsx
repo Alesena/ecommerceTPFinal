@@ -17,14 +17,14 @@ const Login = () => {
     setLoading(true);
 
  
-    if (email === 'admin@admin.com') {
+    if (email === import.meta.env.VITE_USERADMIN) {
       if (password !== 'admins') {
         setLoading(false);
         setError('Credenciales de administrador incorrectas');
         return;
       }
 
-      if (email !== 'admin@admin.com') {
+      if (email !== import.meta.env.VITE_USERADMIN) {
         setLoading(false);
         setError('No puedes acceder como administrador desde este correo');
         return;

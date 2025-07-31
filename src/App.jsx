@@ -15,7 +15,7 @@ import UserDashboard from './features/admin/pages/users/pages/UserDashboard/User
 import Footer from './components/Layout/Footer/Footer';
 import Cart from './features/cart/pages/Cart/Cart';
 import UserRequest from './features/admin/pages/users/pages/UserRequest/UserRequest';
-
+import NotFoundPage from './components/Layout/NotFound/NotFound';
 function App() {
   return (
     <CategoriesProvider>
@@ -34,6 +34,7 @@ function App() {
             <Route path="/mi-cuenta" element={<UserDashboard />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/mis-pedidos" element={<UserRequest />} />
+            <Route path="/*" element={<NotFoundPage />} />
             <Route path="/admin" element={
               <PrivateRoute>
                 <AdminRoute>

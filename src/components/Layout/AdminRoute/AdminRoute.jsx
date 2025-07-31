@@ -12,7 +12,7 @@ const AdminRoute = ({ children }) => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
       
-        setIsAdmin(user.email === 'admin@admin.com');
+        setIsAdmin(user.email === import.meta.env.VITE_USERADMIN);
       } else {
         setIsAdmin(false);
       }

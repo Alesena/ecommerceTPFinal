@@ -14,7 +14,7 @@ export function AuthProvider({ children }) {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setCurrentUser(user);
-        setIsAdmin(user.email === 'admin@admin.com');
+        setIsAdmin(user.email === import.meta.env.VITE_USERADMIN);
       } else {
         setCurrentUser(null);
         setIsAdmin(false);

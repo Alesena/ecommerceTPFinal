@@ -225,7 +225,7 @@ const Navbar = () => {
 
                 {dropdownOpen && (
                   <div className="user-dropdown">
-                    {currentUser?.email === 'admin@admin.com' && (
+                    {currentUser?.email === import.meta.env.VITE_USERADMIN && (
                       <Link
                         to="/admin"
                         className="dropdown-link"
